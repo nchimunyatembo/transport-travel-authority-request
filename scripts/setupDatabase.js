@@ -12,12 +12,6 @@ async function setupDatabase() {
       await db.query(statement);
     }
     console.log('Database schema is ready.');
-    
-const adminQuery = `
-  INSERT IGNORE INTO users (name, email, password, role, approval_status) 
-  VALUES ('Nchimunya Tembo', 'nchimunyatembo09@gmail.com', '$2a$10$e0MYzXyjpJS7Pd0RVvHwHe11.75883391', 'admin', 'approved');
-`;
-await connection.query(adminQuery);
 
   } finally {
     await db.end();

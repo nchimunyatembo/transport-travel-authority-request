@@ -36,6 +36,10 @@ Deploy this repository as one Railway service. No separate client service is req
 6. Set the Railway healthcheck path to `/api/health`. It returns healthy only when MySQL responds.
 7. Deploy, wait for the healthcheck to pass, then add a Railway-generated domain in the service's Networking settings.
 
+### First administrator account
+
+The app has no public sign-up. To create the first administrator, temporarily add `INITIAL_ADMIN_NAME`, `INITIAL_ADMIN_EMAIL`, and `INITIAL_ADMIN_PASSWORD` to the Railway application service variables. On startup, after the schema is created, the bootstrap script hashes the password and creates a `delegate` (ADMIN) account only if the `users` table is empty. Use a password of 8 to 72 bytes. After the deployment succeeds, remove all three `INITIAL_ADMIN_*` variables from Railway and redeploy. Then sign in with the email and password you set. The bootstrap will not add users once the table contains any account.
+
 The initial schema is in `models/schema.sql`. Startup applies it using `CREATE TABLE IF NOT EXISTS`; it does not delete existing records. The SQL migration in `models/migrations/` is for an older existing database and is not needed for a new database created from the current schema.
 
 ## Runtime Configuration

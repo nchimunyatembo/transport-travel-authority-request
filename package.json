@@ -8,11 +8,12 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prestart": "npm run db:setup",
+    "prestart": "npm run db:setup && npm run admin:bootstrap",
     "start": "node server.js",
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "db:setup": "node scripts/setupDatabase.js"
+    "db:setup": "node scripts/setupDatabase.js",
+    "admin:bootstrap": "node scripts/bootstrapAdmin.js"
   },
   "dependencies": {
     "axios": "^1.7.9",
