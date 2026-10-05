@@ -17,6 +17,9 @@ export default function RequestDetails() {
   const [error, setError] = useState('');
   const [approvalNotes, setApprovalNotes] = useState('');
   const [recommendationPosition, setRecommendationPosition] = useState('');
+  const [recommendationNotes, setRecommendationNotes] = useState('');
+  const [vehicleAllocated, setVehicleAllocated] = useState(null);
+  const [driverAllocated, setDriverAllocated] = useState(null);
   const [approverTitle, setApproverTitle] = useState('');
   const [signature, setSignature] = useState(null);
 
@@ -102,19 +105,35 @@ export default function RequestDetails() {
     }
   };
 
-  const handleRecommendation = async () => {
+  const handleRecommendation = async (decision) => {
     if (!recommendationPosition.trim()) {
       alert('Enter the recommending officer position.');
+      return;
+    }
+    if (decision === 'REJECTED' && !recommendationNotes.trim()) {
+      alert('Enter a reason for rejecting this transport application.');
+      return;
+    }
+    if (decision === 'RECOMMENDED' &&
+        (!String(vehicleAllocated ?? request.vehicle_allocated ?? '').trim() ||
+         !String(driverAllocated ?? request.driver_allocated ?? '').trim())) {
+      alert('Enter both the allocated vehicle and driver before recommending.');
       return;
     }
 
     try {
       setActionLoading(true);
       const response = await api.patch(`/requests/${id}/recommend`, {
-        position: recommendationPosition
+        position: recommendationPosition,
+        decision,
+        notes: recommendationNotes,
+        vehicle_allocated: vehicleAllocated ?? request.vehicle_allocated ?? '',
+        driver_allocated: driverAllocated ?? request.driver_allocated ?? ''
       });
       setRequest(response.data.request);
       setRecommendationPosition('');
+      setRecommendationNotes('');
+      alert(decision === 'REJECTED' ? 'Transport application rejected.' : 'Transport application recommended.');
     } catch (err) {
       alert(err.response?.data?.message || 'Could not recommend this transport application.');
     } finally {
@@ -359,14 +378,23 @@ export default function RequestDetails() {
               </div>
               <div className="print-row single"><PrintField label="ROUTE(S) TO BE TAKEN/DESTINATION:" value={request.destination} /></div>
               <div className="print-row single"><PrintField label="DURATION OF THE PROGRAM(S):" value={request.program_duration} /></div>
-              <div className="print-row single"><PrintField label="VEHICLE ALLOCATED:" value={request.vehicle_allocated} /></div>
-              <div className="print-row single"><PrintField label="DRIVER ALLOCATED:" value={request.driver_allocated} /></div>
-
               <div className="print-row print-transport-approval">
                 <PrintField className="print-transport-recommended-name" label="RECOMMENDED BY:" value={request.recommended_by} />
                 <PrintField className="print-transport-recommended-position" label="POSITION:" value={request.recommended_position} />
                 <PrintField className="print-transport-recommended-date" label="DATE:" value={formatPrintDate(request.recommended_date)} />
               </div>
+              <div className="print-row">
+                <PrintField label="VEHICLE ALLOCATED:" value={request.vehicle_allocated} />
+                <PrintField label="DRIVER ALLOCATED:" value={request.driver_allocated} />
+              </div>
+              <div className="print-row single">
+                <PrintField label="RECOMMENDATION DECISION:" value={request.recommendation_decision || 'RECOMMENDED'} />
+              </div>
+              {request.recommendation_notes && (
+                <div className="print-row single">
+                  <PrintField label="RECOMMENDATION NOTES:" value={request.recommendation_notes} />
+                </div>
+              )}
               <div className="print-row">
                 <PrintField label="APPROVED BY:" value={request.approved_by || request.approver_name} />
                 <PrintField label="POSITION:" value={request.approved_position || request.approver_title} />
@@ -451,11 +479,8 @@ export default function RequestDetails() {
               <Detail label="Responsible officer during the journey" value={request.responsible_officer} />
               <Detail label="Required from" value={request.departure_date} />
               <Detail label="To date" value={request.return_date} />
-              <Detail label="Time" value={request.required_time} />
               <Detail label="Route(s) / destination" value={request.destination} />
               <Detail label="Duration of the program(s)" value={request.program_duration} />
-              <Detail label="Vehicle allocated" value={request.vehicle_allocated} />
-              <Detail label="Driver allocated" value={request.driver_allocated} />
             </>
           )}
         </div>
@@ -477,6 +502,12 @@ export default function RequestDetails() {
               <>
                 <p style={styles.auditText}><strong>Position:</strong> {request.recommended_position}</p>
                 <p style={styles.auditText}><strong>Date:</strong> {request.recommended_date}</p>
+                <p style={styles.auditText}><strong>Decision:</strong> {request.recommendation_decision || 'RECOMMENDED'}</p>
+                <p style={styles.auditText}><strong>Vehicle allocated:</strong> {request.vehicle_allocated || 'Not assigned'}</p>
+                <p style={styles.auditText}><strong>Driver allocated:</strong> {request.driver_allocated || 'Not assigned'}</p>
+                {request.recommendation_notes && (
+                  <p style={styles.auditText}><strong>Recommendation notes:</strong> {request.recommendation_notes}</p>
+                )}
               </>
             )}
           </div>
@@ -585,10 +616,40 @@ export default function RequestDetails() {
               <label style={styles.label}>Position *</label>
               <input value={recommendationPosition} onChange={(event) => setRecommendationPosition(event.target.value)} required style={styles.textarea} />
             </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Vehicle allocated *</label>
+              <input
+                value={vehicleAllocated ?? request.vehicle_allocated ?? ''}
+                onChange={(event) => setVehicleAllocated(event.target.value)}
+                style={styles.textarea}
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Driver allocated *</label>
+              <input
+                value={driverAllocated ?? request.driver_allocated ?? ''}
+                onChange={(event) => setDriverAllocated(event.target.value)}
+                style={styles.textarea}
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Rejection reason (required to reject)</label>
+              <textarea
+                value={recommendationNotes}
+                onChange={(event) => setRecommendationNotes(event.target.value)}
+                rows="3"
+                style={styles.textarea}
+              />
+            </div>
             <p style={styles.auditText}><strong>Date:</strong> {new Date().toISOString().slice(0, 10)}</p>
-            <button onClick={handleRecommendation} disabled={actionLoading} style={styles.approveBtn}>
-              {actionLoading ? 'Submitting...' : 'Recommend Transport Application'}
-            </button>
+            <div style={styles.actionButtons}>
+              <button onClick={() => handleRecommendation('REJECTED')} disabled={actionLoading} style={styles.rejectBtn}>
+                {actionLoading ? 'Submitting...' : 'Reject Request'}
+              </button>
+              <button onClick={() => handleRecommendation('RECOMMENDED')} disabled={actionLoading} style={styles.approveBtn}>
+                {actionLoading ? 'Submitting...' : 'Recommend Transport Application'}
+              </button>
+            </div>
           </div>
         )}
 

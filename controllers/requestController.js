@@ -13,6 +13,14 @@ const removeStoredFiles = async (storedPaths) => {
 };
 
 const parseFormData = (value) => typeof value === 'string' ? JSON.parse(value) : value || {};
+const formatInclusiveDuration = (startDate, endDate) => {
+  const toUtcDays = (date) => {
+    const [year, month, day] = date.split('-').map(Number);
+    return Date.UTC(year, month - 1, day) / 86400000;
+  };
+  const days = toUtcDays(endDate) - toUtcDays(startDate) + 1;
+  return `${days} day${days === 1 ? '' : 's'}`;
+};
 
 const statusToApp = {
   draft: 'DRAFT',
@@ -155,15 +163,11 @@ exports.createRequest = async (req, res, next) => {
         destination,
         departure_date,
         return_date,
-        required_time,
-        program_duration,
-        vehicle_allocated,
-        driver_allocated,
         applicant_signature
       } = req.body;
 
       if (!duty_station || !cell_number || !nature_of_duty || !responsible_officer ||
-          !destination || !departure_date || !return_date || !required_time || !program_duration) {
+          !destination || !departure_date || !return_date) {
         return rejectRequest('Complete all required fields on the Transport Application Form.');
       }
       const datesAreValid = [departure_date, return_date].every((date) =>
@@ -208,12 +212,9 @@ exports.createRequest = async (req, res, next) => {
         other_officers: otherOfficerNames,
         departure_date,
         return_date,
-        required_time,
-        program_duration,
-        vehicle_allocated: vehicle_allocated || '',
-        driver_allocated: driver_allocated || '',
+        program_duration: formatInclusiveDuration(departure_date, return_date),
         applicant_signature: `/uploads/signatures/${fileName}`,
-        vehicle_type: vehicle_allocated || 'Not assigned',
+        vehicle_type: 'Not assigned',
         passenger_count: 1 + otherOfficerNames.filter((name) => name.trim()).length,
         purpose: nature_of_duty,
         special_instructions: ''
@@ -383,16 +384,12 @@ exports.updateRequest = async (req, res, next) => {
         destination,
         departure_date,
         return_date,
-        required_time,
-        program_duration,
-        vehicle_allocated,
-        driver_allocated
       } = req.body;
       const datesValid = [departure_date, return_date].every((date) =>
         /^\d{4}-\d{2}-\d{2}$/.test(date || '') && !Number.isNaN(Date.parse(date))
       );
       if (!duty_station || !cell_number || !nature_of_duty || !responsible_officer || !destination ||
-          !required_time || !program_duration || !datesValid || new Date(return_date) < new Date(departure_date)) {
+          !datesValid || new Date(return_date) < new Date(departure_date)) {
         return await rejectUpdate(400, 'Complete the required Transport Application fields and check the dates.');
       }
       if (!formData.applicant_signature) return await rejectUpdate(400, 'A confirmed applicant signature is required.');
@@ -418,13 +415,13 @@ exports.updateRequest = async (req, res, next) => {
         destination,
         departure_date,
         return_date,
-        required_time,
-        program_duration,
-        vehicle_allocated: vehicle_allocated || '',
-        driver_allocated: driver_allocated || '',
-        vehicle_type: vehicle_allocated || 'Not assigned',
+        program_duration: formatInclusiveDuration(departure_date, return_date),
         passenger_count: 1 + otherOfficers.filter((name) => name.trim()).length
       });
+      delete formData.required_time;
+      delete formData.vehicle_allocated;
+      delete formData.driver_allocated;
+      formData.vehicle_type = 'Not assigned';
     }
 
     await connection.query(
@@ -532,8 +529,21 @@ exports.downloadAttachment = async (req, res, next) => {
 
 exports.recommendRequest = async (req, res, next) => {
   const position = String(req.body.position || '').trim();
+  const decision = String(req.body.decision || 'RECOMMENDED').toUpperCase();
+  const notes = String(req.body.notes || '').trim();
+  const vehicleAllocated = String(req.body.vehicle_allocated || '').trim();
+  const driverAllocated = String(req.body.driver_allocated || '').trim();
   if (!position) {
     return res.status(400).json({ message: 'Recommending officer position is required.' });
+  }
+  if (!['RECOMMENDED', 'REJECTED'].includes(decision)) {
+    return res.status(400).json({ message: 'Decision must be RECOMMENDED or REJECTED.' });
+  }
+  if (decision === 'REJECTED' && !notes) {
+    return res.status(400).json({ message: 'A reason is required when rejecting a transport application.' });
+  }
+  if (decision === 'RECOMMENDED' && (!vehicleAllocated || !driverAllocated)) {
+    return res.status(400).json({ message: 'Vehicle and driver allocations are required to recommend this application.' });
   }
 
   let connection;
@@ -577,14 +587,22 @@ exports.recommendRequest = async (req, res, next) => {
     formData.recommended_by = users[0].name;
     formData.recommended_position = position;
     formData.recommended_date = new Date().toISOString().slice(0, 10);
+    formData.recommendation_decision = decision;
+    formData.recommendation_notes = notes;
+    formData.vehicle_allocated = vehicleAllocated;
+    formData.driver_allocated = driverAllocated;
+    formData.vehicle_type = vehicleAllocated || 'Not assigned';
     await connection.query(
-      'UPDATE applications SET form_data = ? WHERE id = ?',
-      [JSON.stringify(formData), req.params.id]
+      'UPDATE applications SET status = ?, form_data = ? WHERE id = ?',
+      [decision === 'REJECTED' ? 'rejected' : 'submitted', JSON.stringify(formData), req.params.id]
     );
     await connection.commit();
 
     const [updatedRows] = await db.query(`${requestSelect} WHERE a.id = ?`, [req.params.id]);
-    res.json({ message: 'Transport application recommended.', request: formatRequest(updatedRows[0]) });
+    res.json({
+      message: decision === 'REJECTED' ? 'Transport application rejected.' : 'Transport application recommended.',
+      request: formatRequest(updatedRows[0])
+    });
   } catch (error) {
     if (connection) await connection.rollback();
     next(error);

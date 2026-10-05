@@ -68,7 +68,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {(['APPLICANT', 'RECOMMENDER', 'ADMIN'].includes(user?.role)) && (
+        {(['APPLICANT', 'RECOMMENDER', 'APPROVER', 'ADMIN'].includes(user?.role)) && (
           <div style={styles.actionButtons}>
             <button onClick={() => navigate('/create-request')} style={styles.newRequestBtn}>
               + Transport Request
@@ -138,7 +138,7 @@ export default function Dashboard() {
       ) : filteredRequests.length === 0 ? (
         <div style={styles.emptyBox}>
           <p style={styles.emptyText}>No transport requests found matching criteria.</p>
-          {(user?.role === 'APPLICANT' || user?.role === 'ADMIN') && (
+          {['APPLICANT', 'RECOMMENDER', 'APPROVER', 'ADMIN'].includes(user?.role) && (
             <button
               onClick={() => navigate('/create-request')}
               style={styles.emptyBtn}

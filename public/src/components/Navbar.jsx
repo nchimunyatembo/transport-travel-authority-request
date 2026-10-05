@@ -16,7 +16,7 @@ export default function Navbar() {
   };
 
   const links = [{ to: '/dashboard', label: 'Dashboard' }];
-  if (['APPLICANT', 'RECOMMENDER', 'ADMIN'].includes(user.role)) {
+  if (['APPLICANT', 'RECOMMENDER', 'APPROVER', 'ADMIN'].includes(user.role)) {
     links.push(
       { to: '/create-request', label: 'New Transport Request' },
       { to: '/create-authority', label: 'Authority to Travel' }

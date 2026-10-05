@@ -98,11 +98,11 @@ export default function App() {
                 } 
               />
 
-              {/* Applicant Only Routes */}
+              {/* Application Creation Routes */}
               <Route 
                 path="/create-request" 
                 element={
-                  <ProtectedRoute allowedRoles={['APPLICANT', 'RECOMMENDER', 'ADMIN']}>
+                  <ProtectedRoute allowedRoles={['APPLICANT', 'RECOMMENDER', 'APPROVER', 'ADMIN']}>
                     <CreateRequestPage />
                   </ProtectedRoute>
                 } 
@@ -110,7 +110,7 @@ export default function App() {
               <Route
                 path="/create-authority"
                 element={
-                  <ProtectedRoute allowedRoles={['APPLICANT', 'RECOMMENDER', 'ADMIN']}>
+                  <ProtectedRoute allowedRoles={['APPLICANT', 'RECOMMENDER', 'APPROVER', 'ADMIN']}>
                     <CreateAuthorityPage />
                   </ProtectedRoute>
                 }

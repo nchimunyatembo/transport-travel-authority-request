@@ -21,10 +21,6 @@ export default function CreateRequest({ requestToEdit = null }) {
     destination: requestToEdit?.destination || '',
     departure_date: requestToEdit?.departure_date || '',
     return_date: requestToEdit?.return_date || '',
-    required_time: requestToEdit?.required_time || '',
-    program_duration: requestToEdit?.program_duration || '',
-    vehicle_allocated: requestToEdit?.vehicle_allocated || '',
-    driver_allocated: requestToEdit?.driver_allocated || ''
   }));
 
   const [loading, setLoading] = useState(false);
@@ -49,6 +45,15 @@ export default function CreateRequest({ requestToEdit = null }) {
       )
     }));
   };
+
+  const programDuration = (() => {
+    if (!formData.departure_date || !formData.return_date) return '';
+    const departure = new Date(`${formData.departure_date}T00:00:00`);
+    const returnDate = new Date(`${formData.return_date}T00:00:00`);
+    const days = Math.round((returnDate - departure) / 86400000) + 1;
+    if (!Number.isFinite(days) || days < 1) return '';
+    return `${days} day${days === 1 ? '' : 's'}`;
+  })();
 
   // Form Submission
   const handleSubmit = async (e) => {
@@ -76,10 +81,11 @@ export default function CreateRequest({ requestToEdit = null }) {
       const fields = {
         application_type: 'transport',
         ...formData,
+        program_duration: programDuration,
         other_officers: JSON.stringify(otherOfficers),
         purpose: formData.nature_of_duty,
         passenger_count: 1 + otherOfficers.filter(Boolean).length,
-        vehicle_type: formData.vehicle_allocated || 'Not assigned'
+        vehicle_type: 'Not assigned'
       };
       if (signature) fields.applicant_signature = signature;
       Object.entries(fields).forEach(([key, value]) => requestData.append(key, value));
@@ -158,10 +164,6 @@ export default function CreateRequest({ requestToEdit = null }) {
               <label style={styles.label}>To · date *</label>
               <input type="date" name="return_date" value={formData.return_date} onChange={handleChange} required style={styles.input} />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Time *</label>
-              <input type="time" name="required_time" value={formData.required_time} onChange={handleChange} required style={styles.input} />
-            </div>
           </div>
 
           <div style={styles.formGroup}>
@@ -171,18 +173,7 @@ export default function CreateRequest({ requestToEdit = null }) {
 
           <div style={styles.formGroup}>
             <label style={styles.label}>Duration of the program(s) *</label>
-            <input name="program_duration" value={formData.program_duration} onChange={handleChange} placeholder="e.g. 3 days" required style={styles.input} />
-          </div>
-
-          <div style={styles.row}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Vehicle allocated</label>
-              <input name="vehicle_allocated" value={formData.vehicle_allocated} onChange={handleChange} style={styles.input} />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Driver allocated</label>
-              <input name="driver_allocated" value={formData.driver_allocated} onChange={handleChange} style={styles.input} />
-            </div>
+            <input value={programDuration} readOnly required style={styles.input} />
           </div>
 
           {requestToEdit?.attachments?.length > 0 && (

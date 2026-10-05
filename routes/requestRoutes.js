@@ -14,7 +14,7 @@ router.use(authenticateToken);
  */
 router.post(
   '/', 
-  authorizeRoles('APPLICANT', 'RECOMMENDER', 'ADMIN'),
+  authorizeRoles('APPLICANT', 'RECOMMENDER', 'APPROVER', 'ADMIN'),
   upload.array('attachments', 5), // Accepts up to 5 supporting documents under field 'attachments'
   requestController.createRequest
 );
