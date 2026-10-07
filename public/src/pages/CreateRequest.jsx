@@ -68,11 +68,6 @@ export default function CreateRequest({ requestToEdit = null }) {
       setError('Add and confirm the applicant signature before submitting.');
       return;
     }
-    if (files.length === 0 && !requestToEdit?.attachments?.length) {
-      setError('Attach at least one required supporting document before submitting.');
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -198,7 +193,6 @@ export default function CreateRequest({ requestToEdit = null }) {
             </button>
             <FileUploader
               onFilesSelected={setFiles}
-              required={!requestToEdit?.attachments?.length}
             />
             <button
               type="submit"

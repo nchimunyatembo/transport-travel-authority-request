@@ -8,6 +8,7 @@ import RequestDetailsPage from './pages/RequestDetails';
 import AdminUsersPage from './pages/AdminUsers';
 import CreateAuthorityPage from './pages/CreateAuthority';
 import EditApplicationPage from './pages/EditApplication';
+import ChangePasswordPage from './pages/ChangePassword';
 
 // Create Auth Context for global user state management
 const AuthContext = createContext(null);
@@ -120,6 +121,14 @@ export default function App() {
                 element={
                   <ProtectedRoute allowedRoles={['ADMIN']}>
                     <AdminUsersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/account/password"
+                element={
+                  <ProtectedRoute>
+                    <ChangePasswordPage />
                   </ProtectedRoute>
                 }
               />

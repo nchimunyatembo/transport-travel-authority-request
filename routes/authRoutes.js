@@ -12,6 +12,7 @@ router.post('/register', authenticateToken, authorizeRoles('ADMIN'), authControl
 
 router.get('/users', authenticateToken, authorizeRoles('ADMIN'), authController.getUsers);
 router.patch('/users/:id/password', authenticateToken, authorizeRoles('ADMIN'), authController.resetPassword);
+router.patch('/me/password', authenticateToken, authController.changePassword);
 
 /**
  * @route   POST /api/auth/login

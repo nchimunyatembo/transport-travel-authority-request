@@ -63,6 +63,7 @@ export default function Navbar() {
                 {user.role}
               </span>
             </div>
+            <Link to="/account/password" style={styles.navLink}>Change Password</Link>
             <button onClick={handleLogout} style={styles.logoutBtn}>
               Logout
             </button>

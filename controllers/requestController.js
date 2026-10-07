@@ -78,10 +78,6 @@ exports.createRequest = async (req, res, next) => {
     return res.status(400).json({ message });
   };
 
-  if (uploadedFiles.length === 0) {
-    return res.status(400).json({ message: 'Attach at least one required supporting document.' });
-  }
-
   let connection;
   let transactionCommitted = false;
   try {
@@ -325,9 +321,6 @@ exports.updateRequest = async (req, res, next) => {
       'SELECT id FROM request_attachments WHERE request_id = ?',
       [req.params.id]
     );
-    if (existingAttachments.length + uploadedFiles.length === 0) {
-      return await rejectUpdate(400, 'At least one supporting document must remain attached.');
-    }
     if (existingAttachments.length + uploadedFiles.length > 5) {
       return await rejectUpdate(400, 'A maximum of five supporting documents is allowed.');
     }

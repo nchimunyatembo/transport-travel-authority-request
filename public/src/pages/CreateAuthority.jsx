@@ -41,10 +41,6 @@ export default function CreateAuthority({ requestToEdit = null }) {
       setError('Reporting date cannot be earlier than the leave date.');
       return;
     }
-    if (files.length === 0 && !requestToEdit?.attachments?.length) {
-      setError('Attach at least one required supporting document.');
-      return;
-    }
     if (!signature && !requestToEdit?.applicant_signature) {
       setError('Add and confirm your applicant signature before submitting.');
       return;
@@ -135,7 +131,7 @@ export default function CreateAuthority({ requestToEdit = null }) {
           >
             Cancel
           </button>
-          <FileUploader onFilesSelected={setFiles} required={!requestToEdit?.attachments?.length} />
+          <FileUploader onFilesSelected={setFiles} />
           <button type="submit" disabled={loading} style={styles.submit}>
             {loading ? 'Saving...' : requestToEdit ? 'Save Changes' : 'Submit Authority to Travel'}
           </button>

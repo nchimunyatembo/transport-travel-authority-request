@@ -6,7 +6,7 @@ import React, { useState } from 'react';
  * @param {number} maxFiles - Maximum allowed files (default: 5)
  * @param {number} maxSizeMB - Maximum file size in MB per file (default: 5)
  */
-export default function FileUploader({ onFilesSelected, maxFiles = 5, maxSizeMB = 5, required = false }) {
+export default function FileUploader({ onFilesSelected, maxFiles = 5, maxSizeMB = 5 }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [error, setError] = useState('');
 
@@ -85,7 +85,7 @@ export default function FileUploader({ onFilesSelected, maxFiles = 5, maxSizeMB 
   return (
     <div style={{ margin: '0', minWidth: '190px', flex: 1 }}>
       <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '6px', fontSize: '12px' }}>
-        {required ? 'Required supporting documents *' : 'Supporting documents'}
+        Supporting documents (optional)
       </label>
 
       {/* Drag and Drop Zone */}
@@ -113,7 +113,6 @@ export default function FileUploader({ onFilesSelected, maxFiles = 5, maxSizeMB 
           id="file-input-element"
           type="file"
           multiple
-          aria-required={required}
           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
           onChange={handleFileInputChange}
           style={{ display: 'none' }}
