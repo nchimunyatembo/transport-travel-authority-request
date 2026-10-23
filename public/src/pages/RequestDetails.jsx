@@ -604,10 +604,15 @@ export default function RequestDetails() {
           </div>
         )}
 
-        {request.application_type === 'transport' && user?.role === 'RECOMMENDER' &&
+        {request.application_type === 'transport' && ['RECOMMENDER', 'APPROVER'].includes(user?.role) &&
           request.status === 'PENDING' && !request.recommended_by && (
           <div style={styles.actionPanel}>
             <h3 style={styles.actionTitle}>Recommendation</h3>
+            {user.role === 'APPROVER' && (
+              <p style={styles.auditText}>
+                If the assigned recommender is unavailable, you can complete this recommendation before making the final decision.
+              </p>
+            )}
             <div style={styles.formGroup}>
               <label style={styles.label}>Name of recommending officer</label>
               <input value={user.full_name || ''} readOnly style={styles.textarea} />
@@ -653,7 +658,7 @@ export default function RequestDetails() {
           </div>
         )}
 
-        {request.application_type === 'transport' && ['APPROVER', 'ADMIN'].includes(user?.role) &&
+        {request.application_type === 'transport' && user?.role === 'ADMIN' &&
           request.status === 'PENDING' && !request.recommended_by && (
           <div role="status" style={styles.awaitingRecommendation}>
             Awaiting recommendation by a Recommender before final approval.
