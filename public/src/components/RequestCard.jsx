@@ -87,9 +87,6 @@ export default function RequestCard({ request, currentUserRole }) {
             backgroundColor: currentUserRole === 'RECOMMENDER' && request.status === 'PENDING' &&
               request.application_type === 'transport' && !request.recommended_by
               ? '#0f766e'
-              : currentUserRole === 'APPROVER' && request.status === 'PENDING' &&
-                request.application_type === 'transport' && !request.recommended_by
-              ? '#0f766e'
               : ['APPROVER', 'ADMIN'].includes(currentUserRole) && request.status === 'PENDING' &&
                 (request.application_type !== 'transport' || request.recommended_by)
               ? '#2563eb'
@@ -98,9 +95,6 @@ export default function RequestCard({ request, currentUserRole }) {
         >
           {currentUserRole === 'RECOMMENDER' && request.status === 'PENDING' &&
           request.application_type === 'transport' && !request.recommended_by
-            ? 'Recommend'
-            : currentUserRole === 'APPROVER' && request.status === 'PENDING' &&
-              request.application_type === 'transport' && !request.recommended_by
             ? 'Recommend'
             : ['APPROVER', 'ADMIN'].includes(currentUserRole) && request.status === 'PENDING' &&
               (request.application_type !== 'transport' || request.recommended_by)

@@ -50,7 +50,7 @@ router.delete(
 
 router.patch(
   '/:id/recommend',
-  authorizeRoles('RECOMMENDER', 'APPROVER'),
+  authorizeRoles('RECOMMENDER'),
   requestController.recommendRequest
 );
 

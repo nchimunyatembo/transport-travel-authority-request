@@ -61,7 +61,7 @@ export default function Dashboard() {
             {user?.role === 'RECOMMENDER'
               ? 'Review and recommend pending transport applications.'
               : user?.role === 'APPROVER'
-              ? 'Review, recommend when needed, and authorize transport & travel requests.'
+              ? 'Authorize transport & travel requests after recommendation.'
               : user?.role === 'ADMIN'
               ? 'Manage district-wide transport requests, fleet routing, and authorizations.'
               : 'Submit and track your transport & duty travel applications.'}

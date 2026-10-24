@@ -105,7 +105,7 @@ export default function RequestDetails() {
     }
   };
 
-  const handleRecommendation = async (decision, approve = false) => {
+  const handleRecommendation = async (decision) => {
     if (!recommendationPosition.trim()) {
       alert('Enter the recommending officer position.');
       return;
@@ -120,15 +120,6 @@ export default function RequestDetails() {
       alert('Enter both the allocated vehicle and driver before recommending.');
       return;
     }
-    if (approve && !approverTitle.trim()) {
-      alert('Enter the approving officer title before submitting.');
-      return;
-    }
-    if (approve && !signature) {
-      alert('Please add and confirm your digital signature.');
-      return;
-    }
-
     try {
       setActionLoading(true);
       const response = await api.patch(`/requests/${id}/recommend`, {
@@ -136,16 +127,11 @@ export default function RequestDetails() {
         decision,
         notes: recommendationNotes,
         vehicle_allocated: vehicleAllocated ?? request.vehicle_allocated ?? '',
-        driver_allocated: driverAllocated ?? request.driver_allocated ?? '',
-        approve,
-        approver_title: approve ? approverTitle : undefined,
-        approval_notes: approve ? approvalNotes : undefined,
-        signature: approve ? signature : undefined
+        driver_allocated: driverAllocated ?? request.driver_allocated ?? ''
       });
       setRequest(response.data.request);
       setRecommendationPosition('');
       setRecommendationNotes('');
-      setApprovalNotes('');
       alert(response.data.message);
     } catch (err) {
       alert(err.response?.data?.message || 'Could not recommend this transport application.');
@@ -617,15 +603,10 @@ export default function RequestDetails() {
           </div>
         )}
 
-        {request.application_type === 'transport' && ['RECOMMENDER', 'APPROVER'].includes(user?.role) &&
+        {request.application_type === 'transport' && user?.role === 'RECOMMENDER' &&
           request.status === 'PENDING' && !request.recommended_by && (
           <div style={styles.actionPanel}>
             <h3 style={styles.actionTitle}>Recommendation</h3>
-            {user.role === 'APPROVER' && (
-              <p style={styles.auditText}>
-                If the assigned recommender is unavailable, complete the recommendation and approval together below.
-              </p>
-            )}
             <div style={styles.formGroup}>
               <label style={styles.label}>Name of recommending officer</label>
               <input value={user.full_name || ''} readOnly style={styles.textarea} />
@@ -660,46 +641,16 @@ export default function RequestDetails() {
               />
             </div>
             <p style={styles.auditText}><strong>Date:</strong> {new Date().toISOString().slice(0, 10)}</p>
-            {user.role === 'APPROVER' && (
-              <>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Position of approving officer *</label>
-                  <input
-                    value={approverTitle}
-                    onChange={(event) => setApproverTitle(event.target.value)}
-                    required
-                    style={styles.textarea}
-                  />
-                </div>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Approver Comments / Instructions</label>
-                  <textarea
-                    value={approvalNotes}
-                    onChange={(event) => setApprovalNotes(event.target.value)}
-                    rows="3"
-                    style={styles.textarea}
-                  />
-                </div>
-                <SignaturePad
-                  label="Signature of approving officer *"
-                  onSignatureSave={setSignature}
-                />
-              </>
-            )}
             <div style={styles.actionButtons}>
               <button onClick={() => handleRecommendation('REJECTED')} disabled={actionLoading} style={styles.rejectBtn}>
                 {actionLoading ? 'Submitting...' : 'Reject Request'}
               </button>
               <button
-                onClick={() => handleRecommendation('RECOMMENDED', user.role === 'APPROVER')}
+                onClick={() => handleRecommendation('RECOMMENDED')}
                 disabled={actionLoading}
                 style={styles.approveBtn}
               >
-                {actionLoading
-                  ? 'Submitting...'
-                  : user.role === 'APPROVER'
-                    ? 'Recommend and Approve'
-                    : 'Recommend Transport Application'}
+                {actionLoading ? 'Submitting...' : 'Recommend Transport Application'}
               </button>
             </div>
           </div>

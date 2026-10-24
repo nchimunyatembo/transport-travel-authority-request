@@ -526,10 +526,6 @@ exports.recommendRequest = async (req, res, next) => {
   const notes = String(req.body.notes || '').trim();
   const vehicleAllocated = String(req.body.vehicle_allocated || '').trim();
   const driverAllocated = String(req.body.driver_allocated || '').trim();
-  const approve = req.body.approve === true;
-  const approverTitle = String(req.body.approver_title || '').trim();
-  const approvalNotes = String(req.body.approval_notes || '').trim();
-  let signatureMatch;
 
   if (!position) {
     return res.status(400).json({ message: 'Recommending officer position is required.' });
@@ -543,28 +539,8 @@ exports.recommendRequest = async (req, res, next) => {
   if (decision === 'RECOMMENDED' && (!vehicleAllocated || !driverAllocated)) {
     return res.status(400).json({ message: 'Vehicle and driver allocations are required to recommend this application.' });
   }
-  if (approve && req.user.role !== 'APPROVER') {
-    return res.status(403).json({ message: 'Only an approver can approve a request while recommending it.' });
-  }
-  if (approve && decision !== 'RECOMMENDED') {
-    return res.status(400).json({ message: 'A rejected recommendation cannot be approved.' });
-  }
-  if (approve && !approverTitle) {
-    return res.status(400).json({ message: 'Approving officer position is required.' });
-  }
-  if (approve) {
-    signatureMatch = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/.exec(String(req.body.signature || ''));
-    if (!signatureMatch) {
-      return res.status(400).json({ message: 'A PNG or JPG approver signature is required.' });
-    }
-    const signatureBuffer = Buffer.from(signatureMatch[2], 'base64');
-    if (!signatureBuffer.length || signatureBuffer.length > 1024 * 1024) {
-      return res.status(400).json({ message: 'The signature image must be smaller than 1 MB.' });
-    }
-  }
 
   let connection;
-  let signatureFilePath;
   let transactionCommitted = false;
   try {
     connection = await db.getConnection();
@@ -611,30 +587,10 @@ exports.recommendRequest = async (req, res, next) => {
     formData.vehicle_allocated = vehicleAllocated;
     formData.driver_allocated = driverAllocated;
     formData.vehicle_type = vehicleAllocated || 'Not assigned';
-    if (approve) {
-      formData.approved_by = users[0].name;
-      formData.approved_position = approverTitle;
-      formData.approver_title = approverTitle;
-      formData.approval_date = new Date().toISOString().slice(0, 10);
-      formData.supporting_documents_status = 'ATTACHED';
-
-      const extension = signatureMatch[1] === 'png' ? 'png' : 'jpg';
-      const signatureDirectory = path.join(__dirname, '../uploads/signatures');
-      const fileName = `approval-${req.params.id}-${Date.now()}-${require('crypto').randomBytes(6).toString('hex')}.${extension}`;
-      signatureFilePath = path.join(signatureDirectory, fileName);
-      await fs.mkdir(signatureDirectory, { recursive: true });
-      await fs.writeFile(signatureFilePath, Buffer.from(signatureMatch[2], 'base64'), { flag: 'wx' });
-    }
     await connection.query(
       'UPDATE applications SET status = ?, form_data = ? WHERE id = ?',
-      [decision === 'REJECTED' ? 'rejected' : approve ? 'approved' : 'submitted', JSON.stringify(formData), req.params.id]
+      [decision === 'REJECTED' ? 'rejected' : 'submitted', JSON.stringify(formData), req.params.id]
     );
-    if (approve) {
-      await connection.query(
-        'INSERT INTO approvals (application_id, approver_id, decision, comments, approver_signature) VALUES (?, ?, ?, ?, ?)',
-        [req.params.id, req.user.id, 'approved', approvalNotes || null, `/uploads/signatures/${path.basename(signatureFilePath)}`]
-      );
-    }
     await connection.commit();
     transactionCommitted = true;
 
@@ -642,16 +598,11 @@ exports.recommendRequest = async (req, res, next) => {
     res.json({
       message: decision === 'REJECTED'
         ? 'Transport application rejected.'
-        : approve
-          ? 'Transport application recommended and approved.'
-          : 'Transport application recommended.',
+        : 'Transport application recommended.',
       request: formatRequest(updatedRows[0])
     });
   } catch (error) {
     if (connection && !transactionCommitted) await connection.rollback();
-    if (signatureFilePath && !transactionCommitted) {
-      await fs.unlink(signatureFilePath).catch(() => {});
-    }
     next(error);
   } finally {
     if (connection) connection.release();
