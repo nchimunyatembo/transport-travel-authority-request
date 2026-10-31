@@ -101,8 +101,7 @@ exports.login = async (req, res, next) => {
         email: user.email,
         role: formatUser(user).role
       },
-      jwtSecret,
-      { expiresIn: '8h' } // Token valid for 8 hours
+      jwtSecret
     );
 
     // Return user info and token (exclude password)
